@@ -2,10 +2,10 @@
 Containerised Prometheus Smart-Nic Exporter
 
 
-[![Docker Hub](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://hub.docker.com/r/YOUR_DOCKERHUB_USERNAME/docker-smartnic-exporter)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/YOUR_GITHUB_USERNAME/docker-smartnic-exporter/ci.yml?label=build)](https://github.com/YOUR_GITHUB_USERNAME/docker-smartnic-exporter/actions)
-[![License](https://img.shields.io/github/license/YOUR_GITHUB_USERNAME/docker-smartnic-exporter)](LICENSE)
+[![Docker Hub](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://hub.docker.com/r/flaconi/smartnic-exporter)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Flaconi/docker-smartnic-exporter/docker_build.yml?label=build)](https://github.com/Flaconi/docker-smartnic-exporter/actions)
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![Prometheus Exporter](https://img.shields.io/badge/prometheus-exporter-orange)](https://prometheus.io/docs/instrumenting/exporters/)
 
 ## 📦 Overview
