@@ -22,11 +22,11 @@ jobs:
 
           echo "TAG=$SLUG" >> $GITHUB_ENV
 
-      - name: Docker Build
-        run: make build TAG=${TAG}
-
       - name: Docker Login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+      - name: Docker Build
+        run: make build-all TAG=${TAG}
+
       - name: Docker Push
-        run: make push TAG=${TAG}
+        run: make push-all TAG=${TAG}
