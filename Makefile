@@ -6,7 +6,7 @@ endif
 
 DIR = .
 FILE = Dockerfile
-IMAGE = "flaconi/smartnic-exporter"
+IMAGE = flaconi/smartnic-exporter
 PYTHON_VERSIONS = 3.11-slim 3.12-slim
 
 

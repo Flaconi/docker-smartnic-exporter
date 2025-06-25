@@ -14,10 +14,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Git tag or branch slug
+      - name: Extract Git tag or fallback to 'dev'
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             SLUG="${GITHUB_REF#refs/tags/}"
+          else
+            SLUG="dev"
           fi
 
           echo "TAG=$SLUG" >> $GITHUB_ENV
