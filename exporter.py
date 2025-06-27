@@ -212,29 +212,29 @@ def main():
         domain_metrics, domain_status = fetch_and_write_metrics("soap_bodies/domain_request.xml", username, password, parse_domain_response)
         all_metrics += domain_metrics
 
-        all_metrics.append("# HELP fetch_success Was the last fetch successful (1) or not (0)")
-        all_metrics.append("# TYPE fetch_success gauge")
+        all_metrics.append("# HELP domain_fetch_success Was the last fetch successful (1) or not (0)")
+        all_metrics.append("# TYPE domain_fetch_success gauge")
         all_metrics.append(
-            f'fetch_success{{timestamp="{domain_status["timestamp"]}", status="{domain_status["status"]}", code="{domain_status["code"]}", error="{domain_status["error"]}", source="{domain_status["source"]}"}} {1 if domain_status["status"] == "success" else 0}'
+            f'domain_fetch_success{{timestamp="{domain_status["timestamp"]}", status="{domain_status["status"]}", code="{domain_status["code"]}", error="{domain_status["error"]}", source="{domain_status["source"]}"}} {1 if domain_status["status"] == "success" else 0}'
         )
-        all_metrics.append("# HELP fetch_timestamp Unix timestamp of last fetch attempt")
-        all_metrics.append("# TYPE fetch_timestamp gauge")
+        all_metrics.append("# HELP domain_fetch_timestamp Unix timestamp of last fetch attempt")
+        all_metrics.append("# TYPE domain_fetch_timestamp gauge")
         all_metrics.append(
-            f'fetch_timestamp{{status="{domain_status["status"]}", code="{domain_status["code"]}", error="{domain_status["error"]}", source="{domain_status["source"]}"}} {domain_status["timestamp"]}'
+            f'domain_fetch_timestamp{{status="{domain_status["status"]}", code="{domain_status["code"]}", error="{domain_status["error"]}", source="{domain_status["source"]}"}} {domain_status["timestamp"]}'
         )
 
         ssl_metrics, ssl_status = fetch_and_write_metrics("soap_bodies/ssl_request.xml", username, password, parse_ssl_response)
         all_metrics += ssl_metrics
 
-        all_metrics.append("# HELP fetch_success Was the last fetch successful (1) or not (0)")
-        all_metrics.append("# TYPE fetch_success gauge")
+        all_metrics.append("# HELP ssl_fetch_success Was the last fetch successful (1) or not (0)")
+        all_metrics.append("# TYPE ssl_fetch_success gauge")
         all_metrics.append(
-            f'fetch_success{{timestamp="{ssl_status["timestamp"]}", status="{ssl_status["status"]}", code="{ssl_status["code"]}", error="{ssl_status["error"]}", source="{ssl_status["source"]}"}} {1 if ssl_status["status"] == "success" else 0}'
+            f'ssl_fetch_success{{timestamp="{ssl_status["timestamp"]}", status="{ssl_status["status"]}", code="{ssl_status["code"]}", error="{ssl_status["error"]}", source="{ssl_status["source"]}"}} {1 if ssl_status["status"] == "success" else 0}'
         )
-        all_metrics.append("# HELP fetch_timestamp Unix timestamp of last fetch attempt")
-        all_metrics.append("# TYPE fetch_timestamp gauge")
+        all_metrics.append("# HELP ssl_fetch_timestamp Unix timestamp of last fetch attempt")
+        all_metrics.append("# TYPE ssl_fetch_timestamp gauge")
         all_metrics.append(
-            f'fetch_timestamp{{status="{ssl_status["status"]}", code="{ssl_status["code"]}", error="{ssl_status["error"]}", source="{ssl_status["source"]}"}} {ssl_status["timestamp"]}'
+            f'ssl_fetch_timestamp{{status="{ssl_status["status"]}", code="{ssl_status["code"]}", error="{ssl_status["error"]}", source="{ssl_status["source"]}"}} {ssl_status["timestamp"]}'
         )
 
         with open(output, "w") as f:
