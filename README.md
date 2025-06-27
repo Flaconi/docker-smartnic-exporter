@@ -1,12 +1,27 @@
 # Docker SmartNIC Exporter
-Containerised Prometheus Smart-Nic Exporter
-
+Containerized exporter that fetches domain and SSL certificate data from the [Smart-NIC SOAP API](https://www.smart-nic.de/) and exposes Prometheus-compatible metrics via textfile format.
 
 [![Docker Hub](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://hub.docker.com/r/flaconi/smartnic-exporter)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Flaconi/docker-smartnic-exporter/docker_build.yml?label=build)](https://github.com/Flaconi/docker-smartnic-exporter/actions)
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![Prometheus Exporter](https://img.shields.io/badge/prometheus-exporter-orange)](https://prometheus.io/docs/instrumenting/exporters/)
+
+---
+
+## 📚 Table of Contents
+
+- [📦 Overview](#-overview)
+- [⚙️ Features](#-features)
+- [🚀 Quickstart](#-quickstart)
+- [📂 Project Structure](#-project-structure)
+- [📊 Metrics](#-metrics)
+- [🔧 Docker Compose Example](#-docker-compose-example)
+- [📥 Build Image Locally](#-build-image-locally)
+- [🧯 Troubleshooting](#-troubleshooting)
+- [💬 Feedback & Contributions](#-feedback--contributions)
+
+---
 
 ## 📦 Overview
 
@@ -16,19 +31,26 @@ This Dockerized Python exporter collects domain data from the Smart-NIC SOAP API
 
 ## ⚙️ Features
 
-- Fetches detailed domain data via SOAP
-- Outputs `domain_info`, `domain_fetch_success`, `domain_fetch_timestamp`
-- Labels include HTTP status, timestamp, and error messages
-- Configurable via CLI args, env vars, or `.env` file
-- Works with Prometheus `textfile` collector
+- Fetches:
+  - Domain info
+  - SSL certificate details
+- Exposes:
+  - Domain lifecycle status and metadata
+  - SSL certificate validity dates and days until expiration
+- Includes fetch diagnostics (`success`, `error`, `timestamp`)
+- Fully configurable via:
+  - CLI args
+  - Environment variables
+  - `.env` file
+- Compatible with Docker and Docker Compose
 
 ---
 
 ## 🚀 Quickstart
 
-### Option 1: Using `.env` file (recommended)
+### 🔐 Using `.env` file (recommended)
 
-**.env**:
+**.env**
 ```env
 EXPORT_USER=your-user
 EXPORT_PASS=your-pass
@@ -40,17 +62,15 @@ EXPORT_OUTPUT=/app/metrics/smartnic.prom
 docker run --rm \
   --env-file .env \
   -v $(pwd)/metrics:/app/metrics \
-  docker.smartnic-exporter
+  flaconi/smartnic-exporter 
 ```
 
----
-
-### Option 2: Using CLI Arguments Only
+### 🖥 Using CLI arguments
 
 ```bash
 docker run --rm \
   -v $(pwd)/metrics:/app/metrics \
-  docker.smartnic-exporter \
+  flaconi/smartnic-exporter \
   python exporter.py \
     --username your-user \
     --password your-pass \
@@ -58,9 +78,7 @@ docker run --rm \
     --output /app/metrics/smartnic.prom
 ```
 
----
-
-### Option 3: Using `-e` Environment Variables
+### 🧪 Environment variables directly
 
 ```bash
 docker run --rm \
@@ -69,45 +87,98 @@ docker run --rm \
   -e EXPORT_INTERVAL=120 \
   -e EXPORT_OUTPUT=/app/metrics/smartnic.prom \
   -v $(pwd)/metrics:/app/metrics \
-  docker.smartnic-exporter
-```
+  flaconi/smartnic-exporter```
+````
 
----
-
-### Option 4: Mixed (override `.env` with CLI)
+### 🔁 Mixed (env + CLI override)
 
 ```bash
 docker run --rm \
   --env-file .env \
   -e EXPORT_INTERVAL=60 \
   -v $(pwd)/metrics:/app/metrics \
-  docker.smartnic-exporter \
+  flaconi/smartnic-exporter \
   python exporter.py --output /app/metrics/custom.prom
 ```
 
-> 🔄 Priority: CLI args > ENV vars > Defaults
+> ⏱️ **Priority:** CLI args > ENV vars > `.env` > Defaults
 
 ---
 
-## 🧪 Metrics Produced
+## 📂 Project Structure
 
-### domain_info
+```text
+smartnic-exporter/
+├── docker-compose.yml
+├── .env                      # Configuration (see Quickstart)
+├── metrics/                  # Prometheus .prom output (mounted)
+│   └── smartnic.prom
+├── soap_bodies/              # SOAP XML requests (mounted or baked into image)
+│   ├── domain_request.xml
+│   └── ssl_request.xml
+├── exporter.py               # Main exporter script
+├── requirements.txt          # Python dependencies
+└── Dockerfile
 ```
-domain_info{domain="...", reg_type="...", ...} 1
-```
-One per domain, with labels like owner, techC, nameservers, etc.
 
-### domain_fetch_success
+> ℹ️ The exporter reads SOAP requests from `soap_bodies/domain_request.xml` and `soap_bodies/ssl_request.xml`.  
+> These files can be:
+> - ✅ Mounted at runtime (**recommended** for easy customization)
+> - 📦 Or baked into the Docker image (see `Dockerfile`)
+
+---
+
+## 📨 SOAP Request Templates
+
+The `soap_bodies/` folder contains XML request templates used to query the [SmartNIC SOAP API](https://www.smart-nic.de/).
+
+- `domain_request.xml` — Fetches domain metadata
+- `ssl_request.xml` — Fetches SSL certificate information
+
+You can modify these templates to apply filters (e.g. by `reseller`, `domain`, etc.) or adjust the fields you want to retrieve.
+
+---
+
+## 📊 Metrics
+
+Note: Each fetch (domain and SSL) generates its own `fetch_success` and `fetch_timestamp` metrics.  
+These include a `source="parse_domain_response"` or `source="parse_ssl_response"` label for context.
+
+
+### 🏷️ `domain_info`
+```text
+domain_info{domain="example.de", reg_type="external", reseller="reseller-123", ...} 1
 ```
+
+### ✅ `domain_fetch_success`
+```text
 domain_fetch_success{timestamp="1718111200", status="success", code="200", error=""} 1
 ```
-Indicates success (`1`) or failure (`0`).
 
-### domain_fetch_timestamp
-```
+### 🕓 `domain_fetch_timestamp`
+```text
 domain_fetch_timestamp{status="success", code="200", error=""} 1718111200
 ```
-Last poll time with labels for status and HTTP code.
+
+### 🔐 `ssl_cert_info`
+```text
+ssl_cert_info{domain="*.example.net", orderNumber="1337", reseller="reseller-123", status="ssl_ok", productId="SSL-80", valid_from="1746576000", valid_to="1780876799"} 1
+```
+
+### 📅 `ssl_cert_valid_not_before`
+```text
+ssl_cert_valid_not_before{domain="*.example.net"} 1746576000
+```
+
+### 📅 `ssl_cert_valid_not_after`
+```text
+ssl_cert_valid_not_after{domain="*.example.net"} 1780876799
+```
+
+### ⏳ `ssl_cert_days_remaining`
+```text
+ssl_cert_days_remaining{domain="*.example.net"} 346
+```
 
 ---
 
@@ -115,10 +186,9 @@ Last poll time with labels for status and HTTP code.
 
 ```yaml
 version: '3.8'
-
 services:
   smartnic-exporter:
-    image: docker.smartnic-exporter
+    image: flaconi/smartnic-exporter
     env_file: .env
     volumes:
       - ./metrics:/app/metrics
@@ -130,33 +200,34 @@ services:
 ## 📥 Build Image Locally
 
 ```bash
-docker build -t docker.smartnic-exporter .
-```
+git clone https://github.com/Flaconi/docker-smartnic-exporter
+cd docker-smartnic-exporter
 
----
-
-## 📂 Requirements
-
-Install Python dependencies if running manually:
-```text
-requests
-python-dotenv
-```
-
-Install:
-```bash
+# install dependencies
 pip install -r requirements.txt
+
+# run the exporter
+python exporter.py --username foo --password bar --output metrics/smartnic.prom
 ```
 
 ---
 
 ## 🧯 Troubleshooting
 
-- Ensure `.env` or env vars are valid
-- Use `docker logs` to view error details
-- If the fetch fails, the metrics file will still include labeled error state
+- Check `docker logs` for errors or HTTP failures
+- Even on failure, metrics are written with error details
+- Validate `.env` syntax (no quotes needed for strings)
+- Verify SmartNIC credentials and API access
+- Ensure file output path is writeable by the container
 
 ---
 
-## 💬 Questions or Improvements?
-Feel free to contribute or open issues!
+## 💬 Feedback & Contributions
+
+Feel free to open issues, suggest improvements, or submit PRs.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
