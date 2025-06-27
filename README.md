@@ -62,7 +62,7 @@ EXPORT_OUTPUT=/app/metrics/smartnic.prom
 docker run --rm \
   --env-file .env \
   -v $(pwd)/metrics:/app/metrics \
-  flaconi/smartnic-exporter 
+  flaconi/smartnic-exporter
 ```
 
 ### 🖥 Using CLI arguments
