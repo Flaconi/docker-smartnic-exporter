@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:ns="http://soap.domain-bestellsystem.de/soap/1.1/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:domainListExtended soapenv:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+            <domainListExtendedRequest xsi:type="ns:DomainListExtendedRequestObject">
+                <level xsi:type="xsd:string">own</level>
+                <limit xsi:type="xsd:string">300</limit>
+                <offset xsi:type="xsd:string">0</offset>
+                <filter xsi:type="ns:ArrayOfFilteritem">
+                    <item xsi:type="ns:FilterItem">
+                        <key xsi:type="xsd:string"></key>
+                        <value xsi:type="xsd:string"></value>
+                    </item>
+                </filter>
+                <fields xsi:type="ns:ArrayOfString">
+                    <item xsi:type="xsd:string">domainName</item>
+                    <item xsi:type="xsd:string">domainStatus</item>
+                    <item xsi:type="xsd:string">regType</item>
+                    <item xsi:type="xsd:string">reseller</item>
+                    <item xsi:type="xsd:string">irtpStatus</item>
+                    <item xsi:type="xsd:string">adminC</item>
+                    <item xsi:type="xsd:string">ownerC</item>
+                    <item xsi:type="xsd:string">zoneC</item>
+                    <item xsi:type="xsd:string">techC</item>
+                    <item xsi:type="xsd:string">nameserver</item>
+                    <item xsi:type="xsd:string">systemInDate</item>
+                    <item xsi:type="xsd:string">orderDate</item>
+                    <item xsi:type="xsd:string">orderNumber</item>
+                    <item xsi:type="xsd:string">toBeDeletedDate</item>
+                    <item xsi:type="xsd:string">status</item>
+                    <item xsi:type="xsd:string">regStatus</item>
+                    <item xsi:type="xsd:string">trusteeWPP</item>
+                </fields>
+                <clientTRID xsi:type="xsd:string"></clientTRID>
+                <forReseller xsi:type="xsd:string"></forReseller>
+            </domainListExtendedRequest>
+        </ns:domainListExtended>
+    </soapenv:Body>
+</soapenv:Envelope>
