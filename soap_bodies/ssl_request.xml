@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:ns="http://soap.domain-bestellsystem.de/soap/1.1/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:sslListExtended soapenv:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+            <sslListExtendedRequest xsi:type="ns:SslListExtendedRequestObject">
+                <!--You may enter the following 9 items in any order-->
+                <level xsi:type="xsd:string">own</level>
+                <limit xsi:type="xsd:string">50</limit>
+                <offset xsi:type="xsd:string">0</offset>
+                <orderBy xsi:type="xsd:string">ordernumber</orderBy>
+                <orderDir xsi:type="xsd:string">asc</orderDir>
+                <filter xsi:type="ns:ArrayOfFilteritem">
+                    <!--Zero or more repetitions:-->
+                    <item xsi:type="ns:FilterItem">
+                        <!--You may enter the following 2 items in any order-->
+                        <key xsi:type="xsd:string">status</key>
+                        <value xsi:type="xsd:string">active</value>
+                    </item>
+                    <item xsi:type="ns:FilterItem">
+                        <!--You may enter the following 2 items in any order-->
+                        <key xsi:type="xsd:string">status</key>
+                        <value xsi:type="xsd:string">pending</value>
+                    </item>
+
+                </filter>
+                <clientTRID xsi:type="xsd:string"></clientTRID>
+                <forReseller xsi:type="xsd:string"></forReseller>
+            </sslListExtendedRequest>
+        </ns:sslListExtended>
+    </soapenv:Body>
+</soapenv:Envelope>
