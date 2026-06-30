@@ -20,6 +20,11 @@ logging.info("Metrics script started.")
 # load .env
 load_dotenv()
 
+
+def prom_escape(value):
+    return str(value or "").replace("\\", "\\\\").replace("\n", "\\n").replace('"', '\\"')
+
+
 def get_config_value(arg_value, env_var_name, default=None, required=False, cast=str):
     if arg_value is not None:
         source = "argument"
@@ -43,9 +48,11 @@ def get_config_value(arg_value, env_var_name, default=None, required=False, cast
 
     return value, source
 
+
 def load_soap_body(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
+
 
 def fetch_and_write_metrics(soap_file_path, username, password, parser_fn):
     url = "https://soap.domain-bestellsystem.de/soap.php"
@@ -63,8 +70,11 @@ def fetch_and_write_metrics(soap_file_path, username, password, parser_fn):
 
     try:
         response = requests.post(
-            url, data=soap_body, headers=headers,
-            auth=HTTPBasicAuth(username, password)
+            url,
+            data=soap_body,
+            headers=headers,
+            auth=HTTPBasicAuth(username, password),
+            timeout=60,
         )
         status_code = response.status_code
 
@@ -89,6 +99,7 @@ def fetch_and_write_metrics(soap_file_path, username, password, parser_fn):
         "source": parser_fn.__name__,
     }
 
+
 def parse_domain_response(xml_text):
     root = ET.fromstring(xml_text)
     metrics = []
@@ -105,28 +116,42 @@ def parse_domain_response(xml_text):
             if "domainName" in domain_data:
                 metric_line = (
                     f'domain_info{{'
-                    f'domain="{domain_data.get("domainName", "")}", '
-                    f'reg_type="{domain_data.get("regType", "")}", '
-                    f'reseller="{domain_data.get("reseller", "")}", '
-                    f'adminC="{domain_data.get("adminC", "")}", '
-                    f'ownerC="{domain_data.get("ownerC", "")}", '
-                    f'techC="{domain_data.get("techC", "")}", '
-                    f'zoneC="{domain_data.get("zoneC", "")}", '
-                    f'nameserver="{domain_data.get("nameserver", "")}", '
-                    f'status="{domain_data.get("status", "")}", '
-                    f'domainStatus="{domain_data.get("domainStatus", "")}", '
-                    f'regStatus="{domain_data.get("regStatus", "")}", '
-                    f'systemInDate="{domain_data.get("systemInDate", "")}", '
-                    f'orderDate="{domain_data.get("orderDate", "")}", '
-                    f'orderNumber="{domain_data.get("orderNumber", "")}", '
-                    f'toBeDeletedDate="{domain_data.get("toBeDeletedDate", "")}", '
-                    f'trusteeWPP="{domain_data.get("trusteeWPP", "")}", '
-                    f'irtpStatus="{domain_data.get("irtpStatus", "")}"'
+                    f'domain="{prom_escape(domain_data.get("domainName", ""))}", '
+                    f'reg_type="{prom_escape(domain_data.get("regType", ""))}", '
+                    f'reseller="{prom_escape(domain_data.get("reseller", ""))}", '
+                    f'adminC="{prom_escape(domain_data.get("adminC", ""))}", '
+                    f'ownerC="{prom_escape(domain_data.get("ownerC", ""))}", '
+                    f'techC="{prom_escape(domain_data.get("techC", ""))}", '
+                    f'zoneC="{prom_escape(domain_data.get("zoneC", ""))}", '
+                    f'nameserver="{prom_escape(domain_data.get("nameserver", ""))}", '
+                    f'status="{prom_escape(domain_data.get("status", ""))}", '
+                    f'domainStatus="{prom_escape(domain_data.get("domainStatus", ""))}", '
+                    f'regStatus="{prom_escape(domain_data.get("regStatus", ""))}", '
+                    f'systemInDate="{prom_escape(domain_data.get("systemInDate", ""))}", '
+                    f'orderDate="{prom_escape(domain_data.get("orderDate", ""))}", '
+                    f'orderNumber="{prom_escape(domain_data.get("orderNumber", ""))}", '
+                    f'toBeDeletedDate="{prom_escape(domain_data.get("toBeDeletedDate", ""))}", '
+                    f'trusteeWPP="{prom_escape(domain_data.get("trusteeWPP", ""))}", '
+                    f'irtpStatus="{prom_escape(domain_data.get("irtpStatus", ""))}"'
                     f'}} 1'
                 )
                 metrics.append(metric_line)
 
     return metrics
+
+
+def ssl_labels(cert_data):
+    return (
+        f'domain="{prom_escape(cert_data.get("domain", ""))}", '
+        f'orderNumber="{prom_escape(cert_data.get("orderNumber", ""))}", '
+        f'reseller="{prom_escape(cert_data.get("reseller", ""))}", '
+        f'status="{prom_escape(cert_data.get("status", ""))}", '
+        f'software="{prom_escape(cert_data.get("software", ""))}", '
+        f'productId="{prom_escape(cert_data.get("productId", ""))}", '
+        f'valid_from="{prom_escape(cert_data.get("notValidBefore", "0"))}", '
+        f'valid_to="{prom_escape(cert_data.get("notValidAfter", "0"))}"'
+    )
+
 
 def parse_ssl_response(xml_text):
     root = ET.fromstring(xml_text)
@@ -149,8 +174,12 @@ def parse_ssl_response(xml_text):
                 cert_data[tag] = child.text or ""
 
             domain = cert_data.get("domain", "")
+            if not domain:
+                continue
+
             not_before = cert_data.get("notValidBefore", "0")
             not_after = cert_data.get("notValidAfter", "0")
+            labels = ssl_labels(cert_data)
 
             try:
                 not_before_int = int(not_before)
@@ -159,20 +188,18 @@ def parse_ssl_response(xml_text):
                 not_before_int = 0
                 not_after_int = 0
 
-            info_metrics.append(
-                f'ssl_cert_info{{domain="{domain}", orderNumber="{cert_data.get("orderNumber", "")}", '
-                f'reseller="{cert_data.get("reseller", "")}", status="{cert_data.get("status", "")}", '
-                f'software="{cert_data.get("software", "")}", productId="{cert_data.get("productId", "")}", '
-                f'valid_from="{not_before}", valid_to="{not_after}"}} 1'
-            )
+            info_metrics.append(f"ssl_cert_info{{{labels}}} 1")
 
             if not_before_int:
-                valid_from_metrics.append(f'ssl_cert_valid_not_before{{domain="{domain}"}} {not_before_int}')
+                valid_from_metrics.append(
+                    f"ssl_cert_valid_not_before{{{labels}}} {not_before_int}"
+                )
             if not_after_int:
-                valid_to_metrics.append(f'ssl_cert_valid_not_after{{domain="{domain}"}} {not_after_int}')
-            if not_before_int and not_after_int:
+                valid_to_metrics.append(
+                    f"ssl_cert_valid_not_after{{{labels}}} {not_after_int}"
+                )
                 days_remaining_metrics.append(
-                    f'ssl_cert_days_remaining{{domain="{domain}"}} {(not_after_int - now) // 86400}'
+                    f"ssl_cert_days_remaining{{{labels}}} {(not_after_int - now) // 86400}"
                 )
 
     return [
@@ -215,12 +242,12 @@ def main():
         all_metrics.append("# HELP domain_fetch_success Was the last fetch successful (1) or not (0)")
         all_metrics.append("# TYPE domain_fetch_success gauge")
         all_metrics.append(
-            f'domain_fetch_success{{timestamp="{domain_status["timestamp"]}", status="{domain_status["status"]}", code="{domain_status["code"]}", error="{domain_status["error"]}", source="{domain_status["source"]}"}} {1 if domain_status["status"] == "success" else 0}'
+            f'domain_fetch_success{{timestamp="{domain_status["timestamp"]}", status="{prom_escape(domain_status["status"])}", code="{domain_status["code"]}", error="{prom_escape(domain_status["error"])}", source="{prom_escape(domain_status["source"])}"}} {1 if domain_status["status"] == "success" else 0}'
         )
         all_metrics.append("# HELP domain_fetch_timestamp Unix timestamp of last fetch attempt")
         all_metrics.append("# TYPE domain_fetch_timestamp gauge")
         all_metrics.append(
-            f'domain_fetch_timestamp{{status="{domain_status["status"]}", code="{domain_status["code"]}", error="{domain_status["error"]}", source="{domain_status["source"]}"}} {domain_status["timestamp"]}'
+            f'domain_fetch_timestamp{{status="{prom_escape(domain_status["status"])}", code="{domain_status["code"]}", error="{prom_escape(domain_status["error"])}", source="{prom_escape(domain_status["source"])}"}} {domain_status["timestamp"]}'
         )
 
         ssl_metrics, ssl_status = fetch_and_write_metrics("soap_bodies/ssl_request.xml", username, password, parse_ssl_response)
@@ -229,20 +256,28 @@ def main():
         all_metrics.append("# HELP ssl_fetch_success Was the last fetch successful (1) or not (0)")
         all_metrics.append("# TYPE ssl_fetch_success gauge")
         all_metrics.append(
-            f'ssl_fetch_success{{timestamp="{ssl_status["timestamp"]}", status="{ssl_status["status"]}", code="{ssl_status["code"]}", error="{ssl_status["error"]}", source="{ssl_status["source"]}"}} {1 if ssl_status["status"] == "success" else 0}'
+            f'ssl_fetch_success{{timestamp="{ssl_status["timestamp"]}", status="{prom_escape(ssl_status["status"])}", code="{ssl_status["code"]}", error="{prom_escape(ssl_status["error"])}", source="{prom_escape(ssl_status["source"])}"}} {1 if ssl_status["status"] == "success" else 0}'
         )
         all_metrics.append("# HELP ssl_fetch_timestamp Unix timestamp of last fetch attempt")
         all_metrics.append("# TYPE ssl_fetch_timestamp gauge")
         all_metrics.append(
-            f'ssl_fetch_timestamp{{status="{ssl_status["status"]}", code="{ssl_status["code"]}", error="{ssl_status["error"]}", source="{ssl_status["source"]}"}} {ssl_status["timestamp"]}'
+            f'ssl_fetch_timestamp{{status="{prom_escape(ssl_status["status"])}", code="{ssl_status["code"]}", error="{prom_escape(ssl_status["error"])}", source="{prom_escape(ssl_status["source"])}"}} {ssl_status["timestamp"]}'
         )
 
-        with open(output, "w") as f:
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+
+        tmp_output = f"{output}.tmp"
+        with open(tmp_output, "w", encoding="utf-8") as f:
             for line in all_metrics:
                 f.write(f"{line}\n")
 
+        os.replace(tmp_output, output)
+
         logging.info(f"Wrote {len(all_metrics)} combined metrics to {output}")
         time.sleep(interval)
+
 
 if __name__ == "__main__":
     main()
